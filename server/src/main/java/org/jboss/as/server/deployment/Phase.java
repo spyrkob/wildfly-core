@@ -462,9 +462,7 @@ public enum Phase {
     public static final int POST_MODULE_EJB_DELIVERY_ACTIVE_MERGE       = 0x0616;
     public static final int POST_MODULE_WELD_WEB_INTEGRATION            = 0x0700;
     public static final int POST_MODULE_WELD_DEVELOPMENT_MODE           = 0x0780;
-    public static final int POST_MODULE_WELD_COMPONENT_INTEGRATION      = 0x0800;
     public static final int POST_MODULE_INSTALL_EXTENSION               = 0x0A00;
-    public static final int POST_MODULE_VALIDATOR_FACTORY               = 0x0B00;
     public static final int POST_MODULE_EAR_DEPENDENCY                  = 0x0C00;
     public static final int POST_MODULE_WELD_BEAN_ARCHIVE               = 0x0D00;
     public static final int POST_MODULE_WELD_EXTERNAL_BEAN_ARCHIVE      = 0x0D50;
@@ -502,14 +500,11 @@ public enum Phase {
     public static final int POST_MODULE_LOCAL_HOME                      = 0x1E00;
     public static final int POST_MODULE_APPLICATION_CLIENT_MANIFEST     = 0x1F00;
     public static final int POST_MODULE_APPLICATION_CLIENT_ACTIVE       = 0x2000;
-    public static final int POST_MODULE_EJB_ORB_BIND                    = 0x2100;
     public static final int POST_MODULE_CMP_PARSE                       = 0x2300;
     public static final int POST_MODULE_CMP_ENTITY_METADATA             = 0x2400;
     public static final int POST_MODULE_CMP_STORE_MANAGER               = 0x2500;
     public static final int POST_MODULE_EJB_IIOP                        = 0x2600;
     public static final int POST_MODULE_POJO                            = 0x2700;
-    public static final int POST_MODULE_IN_APP_CLIENT                   = 0x2780;
-    public static final int POST_MODULE_EE_INSTANCE_NAME                = 0x2790;
     public static final int POST_MODULE_NAMING_CONTEXT                  = 0x2800;
     public static final int POST_MODULE_APP_NAMING_CONTEXT              = 0x2900;
     public static final int POST_MODULE_CACHED_CONNECTION_MANAGER       = 0x2A00;
@@ -520,15 +515,19 @@ public enum Phase {
     public static final int POST_MODULE_UNDERTOW_WEBSOCKETS             = 0x2E00;
     public static final int POST_MODULE_UNDERTOW_HANDLERS               = 0x2F00;
     public static final int POST_MODULE_EE_CONCURRENT_CONTEXT           = 0x3000;
-    public static final int POST_MODULE_BATCH_ENVIRONMENT               = 0x3100;
     public static final int POST_MODULE_RAR_SERVICES_DEPS               = 0x3300;
     public static final int POST_MODULE_UNDERTOW_MODCLUSTER             = 0x3400;
     public static final int POST_MODULE_TRANSACTIONS_EE_CONCURRENCY     = 0x3500;
     public static final int POST_MODULE_EE_COMPONENT_SUSPEND            = 0x3600;
 
     // INSTALL
+    public static final int INSTALL_EJB_ORB_BIND                        = 0x0050;
+    public static final int INSTALL_VALIDATOR_FACTORY                   = 0x0075;
+    public static final int INSTALL_IN_APP_CLIENT                       = 0x0080;
+    public static final int INSTALL_EE_INSTANCE_NAME                    = 0x0085;
     public static final int INSTALL_SHARED_SESSION_MANAGER              = 0x0100;
     public static final int INSTALL_JACC_POLICY                         = 0x0350;
+    public static final int INSTALL_WELD_COMPONENT_INTEGRATION          = 0x0355;
     public static final int INSTALL_COMPONENT_AGGREGATION               = 0x0400;
     public static final int INSTALL_RESOLVE_MESSAGE_DESTINATIONS        = 0x0403;
     public static final int INSTALL_EJB_CLIENT_CONTEXT                  = 0x0404;
@@ -578,6 +577,7 @@ public enum Phase {
     public static final int INSTALL_BUNDLE_ACTIVATE                     = 0x2040;
     public static final int INSTALL_WAB_SERVLETCONTEXT_SERVICE          = 0x2050;
     public static final int INSTALL_PERSISTENCE_SERVICES                = 0x2060;
+    public static final int INSTALL_BATCH_ENVIRONMENT                   = 0x2065;
     public static final int INSTALL_BATCH_RESOURCES                     = 0x2070;
     public static final int INSTALL_LOGGING_DEPLOYMENT_RESOURCES        = 0x207a;
     public static final int INSTALL_DEPLOYMENT_COMPLETE_SERVICE         = 0x2100;
