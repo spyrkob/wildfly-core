@@ -155,6 +155,10 @@ public class DeploymentHandlerUtil {
 
         final ServiceTarget serviceTarget = context.getServiceTarget();
         final ServiceController<?> contentService;
+
+        final OperationStepHandler step = new SubdeploymentDependencyHandler(deploymentUnitServiceName);
+        context.addStep(step, OperationContext.Stage.VERIFY);
+
         // TODO: overlay service
         final ServiceName contentsServiceName = deploymentUnitServiceName.append("contents");
         if (contents[0].hash != null)

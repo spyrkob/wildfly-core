@@ -115,6 +115,17 @@ public abstract class AbstractDeploymentUnitService implements Service<Deploymen
         return problems.isEmpty() ? DeploymentStatus.OK : DeploymentStatus.FAILED;
     }
 
+    public Set<ServiceController<?>> getProblems() {
+        final Set<ServiceController<?>> failed = new HashSet<ServiceController<?>>();
+        final Set<ServiceController<?>> problems = new HashSet<ServiceController<?>>();
+        try {
+            monitor.awaitStability(failed, problems);
+        } catch (final InterruptedException e) {
+            // ignore
+        }
+        return problems;
+    }
+
     Injector<DeployerChains> getDeployerChainsInjector() {
         return deployerChainsInjector;
     }
