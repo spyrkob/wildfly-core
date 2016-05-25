@@ -28,6 +28,7 @@ import org.jboss.as.cli.CommandLineFormat;
 import org.jboss.as.cli.operation.CommandLineParser;
 import org.jboss.as.cli.parsing.command.ArgumentListState;
 import org.jboss.as.cli.parsing.command.ArgumentState;
+import org.jboss.as.cli.parsing.command.ArgumentValueNotFinishedException;
 import org.jboss.as.cli.parsing.command.ArgumentValueState;
 import org.jboss.as.cli.parsing.command.CommandFormat;
 import org.jboss.as.cli.parsing.command.CommandNameState;
@@ -208,7 +209,12 @@ public class ParserUtil {
                             // property value (e.g. a closing } or ], or " is missing) and it's not
                             // really a property separator.
                             format.isPropertySeparator(ctx.getCharacter()) && ctx.getError() == null) {
-                        handler.propertySeparator(ctx.getLocation());
+                        if (ctx.getError() == null) {
+                            handler.propertySeparator(ctx.getLocation());
+                        } else if (ctx.getError() instanceof ArgumentValueNotFinishedException) {
+                            // the error was about current argument value - we can consume it
+                            ctx.setError(null);
+                        }
                     }
 
                     buffer.setLength(0);

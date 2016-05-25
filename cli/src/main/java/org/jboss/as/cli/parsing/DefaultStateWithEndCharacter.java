@@ -22,6 +22,7 @@
 package org.jboss.as.cli.parsing;
 
 import org.jboss.as.cli.CommandFormatException;
+import org.jboss.as.cli.parsing.command.ArgumentValueNotFinishedException;
 
 /**
  *
@@ -57,6 +58,13 @@ public class DefaultStateWithEndCharacter extends DefaultParsingState {
         }
         if(endRequired) {
            this.setEndContentHandler(new ErrorCharacterHandler(("Closing '" + leaveStateChar + "' is missing.")));
+        } else {
+            this.setEndContentHandler(new CharacterHandler() {
+                @Override
+                public void handle(ParsingContext ctx) throws CommandFormatException {
+                    ctx.setError(new ArgumentValueNotFinishedException("Closing '" + leaveStateChar + "' is missing"));
+                }
+            });
         }
         this.setDefaultHandler(GlobalCharacterHandlers.CONTENT_CHARACTER_HANDLER);
     }

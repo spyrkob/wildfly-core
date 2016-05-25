@@ -264,6 +264,21 @@ public class CommandTestCase {
         assertEquals("\"a \\\"b\\\"\"", cmd.getPropertyValue("--arg"));
     }
 
+    @Test
+    public void testCurlyBrackets() throws Exception {
+        DefaultCallbackHandler cmd = parse("cmd --arg={a ");
+        assertEquals("cmd", cmd.getOperationName());
+//        assertTrue(cmd.isInBraces());
+        assertEquals("--arg", cmd.getLastParsedPropertyName());
+    }
+
+    @Test
+    public void testCurlyBracketsClosed() throws Exception {
+        DefaultCallbackHandler cmd = parse("cmd --arg={a} b");
+        assertEquals("cmd", cmd.getOperationName());
+        assertNull("--arg", cmd.getLastParsedPropertyName());
+    }
+
     protected DefaultCallbackHandler parse(String line) {
         DefaultCallbackHandler args = new DefaultCallbackHandler();
         try {
