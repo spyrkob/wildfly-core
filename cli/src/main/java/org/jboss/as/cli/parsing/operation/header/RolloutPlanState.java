@@ -53,7 +53,12 @@ public class RolloutPlanState extends DefaultParsingState {
                 final String input = ctx.getInput();
                 if(input.startsWith("id", ctx.getLocation()) &&
                         input.length() > ctx.getLocation() + 2 &&
-                        (input.charAt(ctx.getLocation() + 2) == '=' || Character.isWhitespace(input.charAt(ctx.getLocation() + 2)))) {
+                        (input.charAt(ctx.getLocation() + 2) == '=' || Character.isWhitespace(input.charAt(ctx.getLocation() + 2)))
+                        ||
+                        input.startsWith("name", ctx.getLocation()) &&
+                                input.length() > ctx.getLocation() + 4 &&
+                                (input.charAt(ctx.getLocation() + 4) == '=' || Character.isWhitespace(input.charAt(ctx.getLocation() + 4)))
+                        ) {
                     ctx.enterState(props);
                 } else {
                     ctx.enterState(sgList);

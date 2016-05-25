@@ -78,6 +78,7 @@ public class RolloutPlanCompleter implements CommandLineCompleter {
                     return -1;
                 }
                 candidates.add("id=");
+                candidates.add("name=");
                 candidates.addAll(Util.getServerGroups(ctx.getModelControllerClient()));
                 return originalLine.length() - bufferIndex;
             }
