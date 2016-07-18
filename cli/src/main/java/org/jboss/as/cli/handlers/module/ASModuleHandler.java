@@ -42,6 +42,7 @@ import org.jboss.as.cli.CommandFormatException;
 import org.jboss.as.cli.CommandLineCompleter;
 import org.jboss.as.cli.CommandLineException;
 import org.jboss.as.cli.Util;
+import org.jboss.as.cli.handlers.ModuleNameTabCompleter;
 import org.jboss.as.cli.handlers.CommandHandlerWithHelp;
 import org.jboss.as.cli.handlers.DefaultFilenameTabCompleter;
 import org.jboss.as.cli.handlers.FilenameTabCompleter;
@@ -130,21 +131,11 @@ public class ASModuleHandler extends CommandHandlerWithHelp {
         final CommandLineCompleter moduleNameCompleter = new CommandLineCompleter() {
             @Override
             public int complete(CommandContext ctx, String buffer, int cursor, List<String> candidates) {
-                String path = buffer.replace('.', File.separatorChar);
-                String modulesPath;
                 try {
-                    modulesPath = getModulesDir(ctx).getAbsolutePath() + File.separatorChar;
+                    return new ModuleNameTabCompleter(getModulesDir(ctx).getAbsolutePath() + File.separatorChar).complete(ctx, buffer, cursor, candidates);
                 } catch (CommandLineException e) {
                     return -1;
                 }
-                int result = pathCompleter.complete(ctx, modulesPath + path, cursor, candidates);
-                if(result < 0) {
-                    return result;
-                }
-                for(int i = 0; i < candidates.size(); ++i) {
-                    candidates.set(i, candidates.get(i).replace(File.separatorChar, '.'));
-                }
-                return result - modulesPath.length();
             }
         };
 
