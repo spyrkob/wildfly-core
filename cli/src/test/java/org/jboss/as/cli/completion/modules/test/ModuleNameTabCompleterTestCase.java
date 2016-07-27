@@ -120,6 +120,33 @@ public class ModuleNameTabCompleterTestCase {
     }
 
     @Test
+    public void listOnlyCommonPrefixIfModulesNamesStartTheSame() throws Exception {
+        createModules("com/module1", "com/module2");
+
+        List<String> suggestions = suggestions(null);
+
+        assertEquals(Arrays.asList("com."), suggestions);
+    }
+
+    @Test
+    public void listOnlyCommonPrefixIfModulesNamesStartTheSameWithFiltering() throws Exception {
+        createModules("com/module1", "com/module2", "org/foo");
+
+        List<String> suggestions = suggestions("co");
+
+        assertEquals(Arrays.asList("com."), suggestions);
+    }
+
+    @Test
+    public void listCompletedModuleAndSubModulePrefixInCaseOfNestedModules() throws Exception {
+        createModules("com/module1", "com/module1/module2");
+
+        List<String> suggestions = suggestions("com.module");
+
+        assertEquals(Arrays.asList("com.module1", "com.module1."), suggestions);
+    }
+
+    @Test
     public void listNestedFolderIfBufferEndsWithSeparator() throws Exception {
         createModules("org/root");
         createLayerModules("base", "org/layer");

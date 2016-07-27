@@ -43,6 +43,7 @@ public class ModuleNameTabCompleter implements CommandLineCompleter {
     private static final Logger log = Logger.getLogger(ModuleNameTabCompleter.class);
 
     private static final EscapeSelector ESCAPE_SELECTOR = ch -> ch == '\\' || ch == ' ' || ch == '"';
+    private static final char MODULE_NAME_SEPARATOR = '.';
 
     private final File modulesRoot;
 
@@ -54,19 +55,32 @@ public class ModuleNameTabCompleter implements CommandLineCompleter {
     public int complete(CommandContext ctx, String buffer, int cursor, List<String> candidates) {
         final Set<String> moduleNames = findModules(modulesRoot);
 
-        for (String moduleName : moduleNames) {
-            if (buffer == null || Util.escapeString(moduleName, ESCAPE_SELECTOR).startsWith(buffer)) {
-                candidates.add(Util.escapeString(moduleName, ESCAPE_SELECTOR));
-            }
-        }
+        final String prefix = buffer==null?"":buffer;
+
+        moduleNames.stream()
+                .map(moduleName->Util.escapeString(moduleName, ESCAPE_SELECTOR))
+                .filter(moduleName->moduleName.startsWith(prefix))
+                .map(moduleName-> firstLevelOfModuleName(prefix, moduleName))
+                .distinct()
+                .forEachOrdered(candidates::add);
 
         return 0;
+    }
+
+    // if the moduleName has multiple levels after the prefix, only use the first level
+    private String firstLevelOfModuleName(String prefix, String moduleName) {
+        final int separatorPosition = moduleName.indexOf(MODULE_NAME_SEPARATOR, prefix.length());
+        if (separatorPosition > 0) {
+            return moduleName.substring(0, separatorPosition + 1); // include trailing separator
+        } else {
+            return moduleName;
+        }
     }
 
     // recursively look for module.xml files and read module name attributes
     private Set<String> findModules(File root) {
         final File[] children = root.listFiles((f)->f.isDirectory());
-        final TreeSet<String> names = new TreeSet<>();
+        final TreeSet<String> names = new TreeSet<>(); // TreeSet to guarantee ordering
 
         for (File child : children) {
             findModules(names, child);
