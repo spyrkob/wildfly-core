@@ -44,6 +44,7 @@ public class ModuleNameTabCompleter implements CommandLineCompleter {
 
     private static final EscapeSelector ESCAPE_SELECTOR = ch -> ch == '\\' || ch == ' ' || ch == '"';
     private static final char MODULE_NAME_SEPARATOR = '.';
+    public static final String LAYERS_DIR = "system/layers";
 
     private final File modulesRoot;
 
@@ -53,9 +54,9 @@ public class ModuleNameTabCompleter implements CommandLineCompleter {
 
     @Override
     public int complete(CommandContext ctx, String buffer, int cursor, List<String> candidates) {
-        final Set<String> moduleNames = findModules(modulesRoot);
-
         final String prefix = buffer==null?"":buffer;
+
+        final Set<String> moduleNames = findModules(modulesRoot, prefix);
 
         moduleNames.stream()
                 .map(moduleName->Util.escapeString(moduleName, ESCAPE_SELECTOR))
@@ -78,26 +79,59 @@ public class ModuleNameTabCompleter implements CommandLineCompleter {
     }
 
     // recursively look for module.xml files and read module name attributes
-    private Set<String> findModules(File root) {
-        final File[] children = root.listFiles((f)->f.isDirectory());
+    private Set<String> findModules(File root, String prefix) {
         final TreeSet<String> names = new TreeSet<>(); // TreeSet to guarantee ordering
 
-        for (File child : children) {
-            findModules(names, child);
+        // separately scanning layered and non-layered modules makes name filtering easier
+        for (File child : root.listFiles((f)->f.isDirectory() && isNotLayersFolder(f))) {
+            findModules(names, child, prefix);
+        }
+
+        final File[] layers = new File(root, LAYERS_DIR).listFiles();
+        if (layers != null) {
+            for (File layer : layers) {
+                for (File child : layer.listFiles((f) -> f.isDirectory())) {
+                    findModules(names, child, prefix);
+                }
+            }
         }
 
         return names;
     }
 
-    private void findModules(Set<String> moduleNames, File currentDirectory) {
-        final File[] children = currentDirectory.listFiles();
+    private void findModules(Set<String> moduleNames, File currentDirectory, String moduleNamePattern) {
+        if (!currentDirectory.getName().startsWith(head(moduleNamePattern))) {
+            return;
+        }
 
-        for (File child : children) {
+        for (File child : currentDirectory.listFiles()) {
             if (child.isDirectory()) {
-                findModules(moduleNames, child);
+                findModules(moduleNames, child, tail(moduleNamePattern));
             } else if (child.getName().equals("module.xml")) {
                 readModuleName(child).ifPresent(moduleNames::add);
             }
+        }
+    }
+
+    private boolean isNotLayersFolder(File f) {
+        return !f.getName().equals("system");
+    }
+
+    // get first part of module name (up to separator)
+    private String head(String moduleName) {
+        if (moduleName.indexOf(MODULE_NAME_SEPARATOR) > 0) {
+            return moduleName.substring(0, moduleName.indexOf('.'));
+        } else {
+            return moduleName;
+        }
+    }
+
+    // get all parts of module name apart from first
+    private String tail(String moduleName) {
+        if (moduleName.indexOf(MODULE_NAME_SEPARATOR) > 0) {
+            return moduleName.substring(moduleName.indexOf(MODULE_NAME_SEPARATOR) + 1);
+        } else {
+            return ""; // match all underlying dirs
         }
     }
 
