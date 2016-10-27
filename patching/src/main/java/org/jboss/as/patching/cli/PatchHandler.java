@@ -44,6 +44,7 @@ import javax.xml.stream.XMLStreamException;
 
 import org.jboss.as.cli.CommandContext;
 import org.jboss.as.cli.CommandFormatException;
+import org.jboss.as.cli.CommandLineCompleter;
 import org.jboss.as.cli.CommandLineException;
 import org.jboss.as.cli.Util;
 import org.jboss.as.cli.handlers.CommandHandlerWithHelp;
@@ -56,7 +57,11 @@ import org.jboss.as.cli.impl.ArgumentWithValue;
 import org.jboss.as.cli.impl.ArgumentWithoutValue;
 import org.jboss.as.cli.impl.DefaultCompleter;
 import org.jboss.as.cli.impl.FileSystemPathArgument;
+import org.jboss.as.cli.impl.IndexedArgument;
 import org.jboss.as.cli.operation.ParsedCommandLine;
+import org.jboss.as.cli.parsing.ExpressionBaseState;
+import org.jboss.as.cli.parsing.ParsingState;
+import org.jboss.as.cli.parsing.WordCharacterHandler;
 import org.jboss.as.cli.util.SimpleTable;
 import org.jboss.as.controller.descriptions.ModelDescriptionConstants;
 import org.jboss.as.patching.Constants;
@@ -119,7 +124,28 @@ public class PatchHandler extends CommandHandlerWithHelp {
     public PatchHandler(final CommandContext context) {
         super(PATCH, false);
 
-        action = new ArgumentWithValue(this, new SimpleTabCompleter(new String[]{APPLY, ROLLBACK, HISTORY, INFO, INSPECT}), 0, "--action");
+        action = new ArgumentWithValue(this, new SimpleTabCompleter(new String[]{APPLY, ROLLBACK, HISTORY, INFO, INSPECT}) {
+            @Override
+            public int complete(CommandContext ctx, String buffer, int cursor, List<String> candidates) {
+                int offset = super.complete(ctx, buffer, cursor, candidates);
+
+                // do not show rollback if system is unpatched
+                if (candidates.contains(ROLLBACK) && !hasPatches(ctx)) {
+                    candidates.remove(ROLLBACK);
+                }
+
+                return offset;
+            }
+
+            private boolean hasPatches(CommandContext ctx) {
+                try {
+                    return !getHistory(ctx).isEmpty();
+                } catch (PatchingException | CommandLineException e) {
+                    return false;
+                }
+            }
+
+        }, 0, "--action");
 
         host = new ArgumentWithValue(this, new DefaultCompleter(CandidatesProviders.HOSTS), "--host") {
             @Override
@@ -178,7 +204,8 @@ public class PatchHandler extends CommandHandlerWithHelp {
         // apply arguments
 
         final FilenameTabCompleter pathCompleter = Util.isWindows() ? new WindowsFilenameTabCompleter(context) : new DefaultFilenameTabCompleter(context);
-        path = new FileSystemPathArgument(this, pathCompleter, 1, "--path") {
+        path = new IndexedArgument(this, pathCompleter, 1, "--path") {
+
             @Override
             public boolean canAppearNext(CommandContext ctx) throws CommandFormatException {
                 if (canOnlyAppearAfterActions(ctx, APPLY, INSPECT)) {
@@ -187,12 +214,61 @@ public class PatchHandler extends CommandHandlerWithHelp {
                 return false;
             }
 
+            // temporary copy/paste from FileSystemPathArgument
+            private FilenameTabCompleter completer = pathCompleter;
+
+            @Override
+            protected ParsingState initParsingState() {
+                final ExpressionBaseState state = new ExpressionBaseState("EXPR", true, false);
+                if(Util.isWindows()) {
+                    // to not require escaping FS name separator
+                    state.setDefaultHandler(WordCharacterHandler.IGNORE_LB_ESCAPE_OFF);
+                } else {
+                    state.setDefaultHandler(WordCharacterHandler.IGNORE_LB_ESCAPE_ON);
+                }
+                return state;
+            }
+
+            @Override
+            public String getValue(ParsedCommandLine args, boolean required) throws CommandFormatException {
+                return translatePath(super.getValue(args, required));
+            }
+
+            private String translatePath(String value) {
+                if(value != null) {
+                    if(value.length() >= 0 && value.charAt(0) == '"' && value.charAt(value.length() - 1) == '"') {
+                        value = value.substring(1, value.length() - 1);
+                    }
+                    if(completer != null) {
+                        value = completer.translatePath(value);
+                    }
+                }
+                return value;
+            }
+
         };
         path.addRequiredPreceding(action);
 
         // rollback arguments
 
-        patchId = new ArgumentWithValue(this, 1, "--patch-id") {
+        CommandLineCompleter patchIdCompleter = new CommandLineCompleter() {
+            @Override
+            public int complete(CommandContext ctx, String buffer, int cursor, List<String> candidates) {
+                try {
+                    final String prefix = buffer!=null ? buffer : "";
+
+                    getHistory(ctx).stream()
+                            .map(n->n.get("patch-id").asString())
+                            .filter(s->s.startsWith(prefix))
+                            .forEach(candidates::add);
+                } catch (PatchingException | CommandLineException e) {
+                    // ignore the error and don't suggest patches
+                }
+                return 0;
+            }
+        };
+
+        patchId = new IndexedArgument(this, patchIdCompleter, 1, "--patch-id") {
             @Override
             public boolean canAppearNext(CommandContext ctx) throws CommandFormatException {
                 if (canOnlyAppearAfterActions(ctx, INFO, ROLLBACK)) {
@@ -703,6 +779,13 @@ public class PatchHandler extends CommandHandlerWithHelp {
             }
         }
         return target;
+    }
+
+    private List<ModelNode> getHistory(CommandContext ctx) throws PatchingException, CommandLineException {
+        final PatchOperationBuilder historyOp = PatchOperationBuilder.Factory.history(patchStream.getValue(ctx.getParsedCommandLine()));
+        final ModelNode patchingHistory = historyOp.execute(createPatchOperationTarget(ctx));
+
+        return patchingHistory.get("result").asList();
     }
 
     private static final String HOME = "JBOSS_HOME";
