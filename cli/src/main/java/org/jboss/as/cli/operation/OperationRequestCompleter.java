@@ -34,6 +34,7 @@ import org.jboss.as.cli.CommandLineFormat;
 import org.jboss.as.cli.EscapeSelector;
 import org.jboss.as.cli.Util;
 import org.jboss.as.cli.impl.ArgumentWithoutValue;
+import org.jboss.as.cli.impl.IndexedArgument;
 import org.jboss.as.cli.operation.impl.DefaultCallbackHandler;
 
 
@@ -174,7 +175,10 @@ public class OperationRequestCompleter implements CommandLineCompleter {
                     boolean needNeg = false;
                     for (CommandArgument arg : allArgs) {
                         if (arg.canAppearNext(ctx)) {
-                            if (arg.getIndex() >= 0) {
+                            if (arg instanceof IndexedArgument) {
+                                completeIndexedArgument(ctx, candidates, "", arg);
+                            }
+                            else if (arg.getIndex() >= 0) {
                                 final CommandLineCompleter valCompl = arg.getValueCompleter();
                                 if (valCompl != null) {
                                     valCompl.complete(ctx, "", 0, candidates);
@@ -312,7 +316,10 @@ public class OperationRequestCompleter implements CommandLineCompleter {
             for (CommandArgument arg : allArgs) {
                 try {
                     if (arg.canAppearNext(ctx)) {
-                        if (arg.getIndex() >= 0) {
+                        if (arg instanceof IndexedArgument) {
+                            completeIndexedArgument(ctx, candidates, chunk, arg);
+                        }
+                        else if (arg.getIndex() >= 0) {
                             CommandLineCompleter valCompl = arg.getValueCompleter();
                             if (valCompl != null) {
                                 final String value = chunk == null ? "" : chunk;
@@ -527,13 +534,40 @@ public class OperationRequestCompleter implements CommandLineCompleter {
     protected CommandLineCompleter getValueCompleter(CommandContext ctx, Iterable<CommandArgument> allArgs, int index) {
         CommandLineCompleter maxIndex = null;
         for (CommandArgument arg : allArgs) {
-            if (arg.getIndex() == index) {
+            if (arg instanceof IndexedArgument) {
+                if (isCurrentArgument((IndexedArgument) arg, index, ctx)) {
+                    return arg.getValueCompleter();
+                }
+            }
+            else if (arg.getIndex() == index) {
                 return arg.getValueCompleter();
-            } else if(arg.getIndex() == Integer.MAX_VALUE) {
+            }
+
+            if(arg.getIndex() == Integer.MAX_VALUE) {
                 maxIndex = arg.getValueCompleter();
             }
         }
         return maxIndex;
+    }
+
+    private void completeIndexedArgument(CommandContext ctx, List<String> candidates, String chunk, CommandArgument arg) {
+        if (arg.getIndex() == ctx.getParsedCommandLine().getOtherProperties().size()
+                || arg.getIndex() == Integer.MAX_VALUE) {
+            CommandLineCompleter valCompl = arg.getValueCompleter();
+            if (valCompl != null) {
+                final String value = chunk == null ? "" : chunk;
+                valCompl.complete(ctx, value, value.length(), candidates);
+            }
+        }
+    }
+
+    private boolean isCurrentArgument(IndexedArgument arg, int index, CommandContext ctx) {
+        try {
+            return arg.getIndex() == index && arg.canAppearNext(ctx);
+        } catch (CommandFormatException e) {
+            // TODO: handle it better
+            return false;
+        }
     }
 
     private int completeHeader(Map<String, OperationRequestHeader> headers,
