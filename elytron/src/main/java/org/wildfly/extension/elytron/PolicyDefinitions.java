@@ -57,6 +57,7 @@ import org.jboss.as.controller.ResourceDefinition;
 import org.jboss.as.controller.SimpleAttributeDefinition;
 import org.jboss.as.controller.SimpleAttributeDefinitionBuilder;
 import org.jboss.as.controller.SimpleResourceDefinition;
+import org.jboss.as.controller.capability.CapabilityServiceSupport;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
 import org.jboss.as.controller.registry.OperationEntry;
 import org.jboss.as.controller.registry.Resource;
@@ -306,6 +307,9 @@ class PolicyDefinitions {
     private static Consumer<Consumer<Policy>> configureJaccPolicy(OperationContext context, ModelNode model) throws OperationFailedException {
         ModelNode policyModel = model.get(JACC_POLICY);
 
+        CapabilityServiceSupport capabilitySupport = context.getCapabilityServiceSupport();
+        final boolean legacyJacc = capabilitySupport.hasCapability("org.wildfly.legacy-security.jacc");
+
         if (policyModel.isDefined()) {
             final String policyProvider = JaccPolicyDefinition.POLICY_PROVIDER.resolveModelAttribute(context, policyModel).asString();
             final String configurationFactory = JaccPolicyDefinition.CONFIGURATION_FACTORY.resolveModelAttribute(context, policyModel).asString();
@@ -323,9 +327,13 @@ class PolicyDefinitions {
                         Policy policy = newPolicy(policyProvider, configuredClassLoader);
                         policyConsumer.accept(policy);
 
-                        doPrivileged((PrivilegedExceptionAction<PolicyConfigurationFactory>) () -> newPolicyConfigurationFactory(
-                                configurationFactory,
-                                defaultConfigurationFactory ? PolicyDefinitions.class.getClassLoader() : configuredClassLoader));
+                        if (!legacyJacc) {
+                            doPrivileged((PrivilegedExceptionAction<PolicyConfigurationFactory>) () -> newPolicyConfigurationFactory(
+                                    configurationFactory,
+                                    defaultConfigurationFactory ? PolicyDefinitions.class.getClassLoader() : configuredClassLoader));
+                        } else {
+                            context.restartRequired();
+                        }
 
                         Map<String, PolicyContextHandler> discoveredHandlers = discoverPolicyContextHandlers();
 
