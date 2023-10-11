@@ -334,6 +334,15 @@ public class InstallationManagerIntegrationTestCase extends AbstractCliTestBase 
     }
 
     @Test
+    public void _g_testVersion() throws IOException {
+        String host = "secondary";
+        cli.sendLine("installer versions --host=" + host);
+        String output = cli.readOutput();
+
+        System.out.println(output);
+    }
+
+    @Test
     public void testRevisionDetails() throws Exception {
         String host = "primary";
         cli.sendLine("installer history --revision=dummy --host=" + host);

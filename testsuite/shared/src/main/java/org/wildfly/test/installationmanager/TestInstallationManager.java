@@ -18,6 +18,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -26,6 +27,7 @@ import org.wildfly.installationmanager.Channel;
 import org.wildfly.installationmanager.ChannelChange;
 import org.wildfly.installationmanager.HistoryResult;
 import org.wildfly.installationmanager.InstallationChanges;
+import org.wildfly.installationmanager.ManifestVersion;
 import org.wildfly.installationmanager.MavenOptions;
 import org.wildfly.installationmanager.OperationNotAvailableException;
 import org.wildfly.installationmanager.Repository;
@@ -248,6 +250,13 @@ public class TestInstallationManager implements InstallationManager {
     @Override
     public String generateApplyRevertCommand(Path scriptHome, Path candidatePath, OsShell shell) throws OperationNotAvailableException {
         return scriptHome + APPLY_REVERT_BASE_GENERATED_COMMAND + candidatePath.toString();
+    }
+
+    @Override
+    public Collection<ManifestVersion> getInstalledVersions() {
+        return lstChannels.stream()
+                .map(c->new ManifestVersion(c.getManifestCoordinate().get(), c.getManifestCoordinate() + ":1.0.0", "1.0.0", ManifestVersion.Type.MAVEN))
+                .collect(Collectors.toList());
     }
 
     public static void zipDir(Path inputFile, Path target) throws IOException {

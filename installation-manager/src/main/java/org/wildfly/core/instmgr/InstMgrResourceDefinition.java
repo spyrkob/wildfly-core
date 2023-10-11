@@ -167,6 +167,9 @@ class InstMgrResourceDefinition extends SimpleResourceDefinition {
 
         InstMgrCustomPatchRemoveHandler customPatchRemoveHandler = new InstMgrCustomPatchRemoveHandler(imService, imf);
         resourceRegistration.registerOperationHandler(customPatchRemoveHandler.DEFINITION, customPatchRemoveHandler);
+
+        InstMgrVersionsHandler versionsHandler = new InstMgrVersionsHandler(imService, imf);
+        resourceRegistration.registerOperationHandler(InstMgrVersionsHandler.DEFINITION, versionsHandler);
     }
 
     @Override
